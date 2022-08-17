@@ -1,7 +1,7 @@
 # tinyserve
 
 * a small local dev server that supports live reloading via [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events)
-* only one dependency, `[mime-db](https://www.npmjs.com/package/mime-db)`
+* only one dependency, [`mime-db`](https://www.npmjs.com/package/mime-db)
 * absolutely not for use in production
 
 ## installation
