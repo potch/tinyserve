@@ -12,6 +12,8 @@
 
 `> tinyserve [options]`
 
+`> tinyserve -p 1234 -d dist/ -w dist/`
+
 ### options
 ```
   -h, --help     this help text

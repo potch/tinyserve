@@ -1,7 +1,7 @@
 {
-  "name": "tinyserve",
+  "name": "@potch/tinyserve",
   "version": "1.0.0",
-  "description": "the crappy little dev server that could",
+  "description": "the little dev server that could",
   "main": "tinyserve.js",
   "bin": {
     "tinyserve": "tinyserve.js"
