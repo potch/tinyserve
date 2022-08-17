@@ -1,0 +1,18 @@
+{
+  "name": "tinyserve",
+  "version": "1.0.0",
+  "description": "the crappy little dev server that could",
+  "main": "tinyserve.js",
+  "bin": {
+    "tinyserve": "tinyserve.js"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Potch",
+  "license": "ISC",
+  "dependencies": {
+    "mime-db": "^1.52.0"
+  }
+}
