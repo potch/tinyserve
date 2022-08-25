@@ -17,8 +17,8 @@
 ### options
 ```
   -h, --help     this help text
-  -d             directory to serve, default is "."
-  -p             port, default is 8080
+  -d <dir>       directory to serve, default is "."
+  -p <port>      port, default is 8080
   -w <path>      watch file or folder for changes- setting this enables live reload
   -l <route>     URL path of live reload events, default is "_live"
 ```
