@@ -27,8 +27,8 @@ const createBus = () => {
 
 // read args
 const port = process.env.PORT || getArg("-p") || 8080;
-const isLive = hasArg("-w");
-const livePath = getArg("-l", "_live");
+const isLive = hasArg("-l") || hasArg("-w");
+const livePath = getArg("-r", "_live");
 const dir = getArg("-d", ".");
 const watch = getArg("-w", "");
 
@@ -37,34 +37,17 @@ if (hasArg("--help") || hasArg("-h")) {
 
 options:
   -h, --help     this help text
-  -d             directory to serve, default is "."
-  -p             port, default is 8080
-  -w <path>      watch file or folder for changes- setting this enables live reload
-  -l <route>     URL path of live reload events, default is "_live"
+  -d <dir>       directory to serve, default is "."
+  -p <port>      port, default is 8080
+  -w <path>      watch file or folder for changes, implies -l
+  -l             enable live reload
+  -r <route>     URL path of live reload events, default is "_live"
   `);
   process.exit(0);
 }
 
 const sentinelPath = path.join(process.cwd(), watch);
 const baseDir = path.join(process.cwd(), dir);
-
-const watchScript = `
-<script>
-  function connect() {
-    const source = new EventSource("/${livePath}");
-    source.addEventListener('message', e => {
-      const data = JSON.parse(e.data);
-      if (data.reload) {
-        window.location.reload();
-      }
-    });
-    source.addEventListener('error', e => {
-      setTimeout(connect, 5000);
-    });
-  }
-  connect();
-</script>
-`;
 
 async function sendFile(response, path) {
   if (isLive && path.endsWith(".html")) {
@@ -106,8 +89,26 @@ const mimeType = (filePath) => {
   return "text/plain";
 };
 
+// watcher stuff
 const changeBus = createBus();
 
+// injected into pages
+const watchScript = `
+<script>
+  function connect() {
+    const source = new EventSource("/${livePath}");
+    source.addEventListener('message', e => {
+      const data = JSON.parse(e.data);
+      if (data.reload) {
+        window.location.reload();
+      }
+    });
+  }
+  connect();
+</script>
+`;
+
+// does the watching
 async function startWatcher(path) {
   const ac = new AbortController();
   const { signal } = ac;
@@ -140,8 +141,17 @@ async function liveReload(request, response) {
   changeBus.on(sendReload);
 }
 
+// server stuff
 const server = http.createServer(async (request, response) => {
   console.log(request.method, request.url);
+
+  if (request.method.toLowerCase() === "post") {
+    if (isLive && request.url === "/" + livePath) {
+      changeBus.emit();
+      response.statusCode = 204;
+      return response.end();
+    }
+  }
 
   if (request.method.toLowerCase() !== "get") {
     response.statusCode = 400;
@@ -158,7 +168,7 @@ const server = http.createServer(async (request, response) => {
       "Cache-Control": "no-cache",
       "Access-Control-Allow-Origin": "*",
     });
-    response.write("retry: 5000\n");
+    response.write("retry: 5000\n\n");
     return liveReload(request, response);
   }
 
