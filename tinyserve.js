@@ -78,8 +78,8 @@ const mimeTypes = Object.entries(mimeDB).reduce((o, [type, data]) => {
   return o;
 }, {});
 
-const mimeType = (filePath) => {
-  let ext = path.extname(filePath);
+const mimeType = (filePath, trim) => {
+  let ext = path.extname(path.basename(filePath, trim));
   if (ext) {
     ext = ext.substring(1);
     if (ext in mimeTypes) {
@@ -223,12 +223,22 @@ const server = http.createServer(async (request, response) => {
   // send the file if it exists
   try {
     if (await exists(filePath)) {
-      if (mimeType(filePath)) {
-        response.setHeader("Content-Type", mimeType(filePath));
+      let ext = path.extname(filePath);
+      if (ext === ".gz") {
+        response.setHeader("Content-Encoding", "gzip");
+        if (mimeType(filePath, ".gz")) {
+          response.setHeader("Content-Type", mimeType(filePath, ".gz"));
+        }
+      } else {
+        if (mimeType(filePath)) {
+          response.setHeader("Content-Type", mimeType(filePath));
+        }
       }
       return sendFile(response, filePath);
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error(e);
+  }
 
   response.statusCode = 404;
   response.end("File Not Found");
