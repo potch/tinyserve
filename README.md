@@ -14,6 +14,8 @@
 
 `> tinyserve -p 1234 -d dist/ -w dist/`
 
+`> tinyserve -w src/ -d build/ -x "npm run build"`
+
 ### options
 
 ```
