@@ -51,7 +51,7 @@ options:
   process.exit(0);
 }
 
-const sentinelPath = path.join(process.cwd(), watch);
+const watchPath = path.join(process.cwd(), watch);
 const baseDir = path.join(process.cwd(), dir);
 
 async function sendFile(response, path) {
@@ -151,7 +151,7 @@ async function startWatcher(path) {
       changeBus.emit();
     }
   } catch (err) {
-    console.log("[live] closing watcher");
+    console.log("[live] closing watcher", err);
     if (err.name === "AbortError") return;
     ac.abort();
   }
@@ -280,8 +280,11 @@ const server = http.createServer(async (request, response) => {
 server.listen(port, () => {
   console.log(`Server running at port ${port}`);
   if (isLive) {
-    startWatcher(sentinelPath);
-    console.log(`watching for changes in ${sentinelPath}`);
+    const watchPaths = watch.split(quotedStringRE);
+    for (const p of watchPaths) {
+      startWatcher(p);
+    }
+    console.log(`watching for changes in ${watchPath}`);
     console.log(`listening for live-reload clients at /${livePath}`);
   }
 });
