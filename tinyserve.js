@@ -48,6 +48,7 @@ options:
   -x <command>   run this command on changes, needs -w
   -l             enable live reload
   -r <route>     URL path of live reload events, default is "_live"
+  -v             enable verbose logging
   `);
   process.exit(0);
 }

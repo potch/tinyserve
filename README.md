@@ -23,7 +23,8 @@
   -w <path>      watch file or folder for changes, implies -l
   -x <command>   run this command on changes, needs -w
   -l             enable live reload
-  -r <route>     URL path of live reload events, default is "_live"
+  -r <route>     URL path of live reload events, default is "_live
+  -v             enable verbose logging"
 ```
 
 ### live reload
