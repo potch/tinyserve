@@ -3,7 +3,10 @@
 import * as http from "http";
 import * as fs from "fs";
 import * as path from "path";
+import { spawn } from "child_process";
 import mimeDB from "mime-db";
+
+const quotedStringRE = /\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/;
 
 // arg parsing
 const hasArg = (arg) => process.argv.includes(arg);
@@ -31,6 +34,7 @@ const isLive = hasArg("-l") || hasArg("-w");
 const livePath = getArg("-r", "_live");
 const dir = getArg("-d", ".");
 const watch = getArg("-w", "");
+const command = getArg("-x", "");
 
 if (hasArg("--help") || hasArg("-h")) {
   console.log(`tinyserve - tiny file server
@@ -40,6 +44,7 @@ options:
   -d <dir>       directory to serve, default is "."
   -p <port>      port, default is 8080
   -w <path>      watch file or folder for changes, implies -l
+  -x <command>   run this command on changes, needs -w
   -l             enable live reload
   -r <route>     URL path of live reload events, default is "_live"
   `);
@@ -108,14 +113,41 @@ const watchScript = `
 </script>
 `;
 
+const runCommand = (command) =>
+  new Promise((done) => {
+    const [cmd, ...args] = command.split(quotedStringRE);
+    console.log(">", command);
+    const proc = spawn(cmd, args, { stdio: "inherit" });
+    proc.on("stdout", (data) => process.stdout.write(data));
+    proc.on("stderr", (err) => process.stdout.write(err));
+    proc.on("exit", () => done());
+  });
+
 // does the watching
+const mtimes = new Map();
 async function startWatcher(path) {
   const ac = new AbortController();
   const { signal } = ac;
   try {
     const watcher = fs.promises.watch(path, { signal });
-    for await (const event of watcher) {
-      console.log("[live] changes detected");
+    for await (const { eventType, filename } of watcher) {
+      // debounce multiple events for the same change
+      if (filename) {
+        try {
+          const mtime = (await fs.promises.stat(filename))?.mtimeMs;
+          const lastMtime = mtimes.get(filename);
+          if (mtime) {
+            mtimes.set(filename, mtime);
+            if (mtime === lastMtime) {
+              continue;
+            }
+          }
+        } catch (e) {}
+      }
+      console.log("[live] changes detected", filename);
+      if (command) {
+        await runCommand(command);
+      }
       changeBus.emit();
     }
   } catch (err) {

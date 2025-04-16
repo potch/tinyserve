@@ -21,6 +21,7 @@
   -d <dir>       directory to serve, default is "."
   -p <port>      port, default is 8080
   -w <path>      watch file or folder for changes, implies -l
+  -x <command>   run this command on changes, needs -w
   -l             enable live reload
   -r <route>     URL path of live reload events, default is "_live"
 ```
