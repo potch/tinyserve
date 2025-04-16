@@ -35,6 +35,7 @@ const livePath = getArg("-r", "_live");
 const dir = getArg("-d", ".");
 const watch = getArg("-w", "");
 const command = getArg("-x", "");
+const verbose = hasArg("-v");
 
 if (hasArg("--help") || hasArg("-h")) {
   console.log(`tinyserve - tiny file server
@@ -51,7 +52,6 @@ options:
   process.exit(0);
 }
 
-const watchPath = path.join(process.cwd(), watch);
 const baseDir = path.join(process.cwd(), dir);
 
 async function sendFile(response, path) {
@@ -131,18 +131,23 @@ async function startWatcher(path) {
   try {
     const watcher = fs.promises.watch(path, { signal });
     for await (const { eventType, filename } of watcher) {
+      verbose && console.error(eventType, filename);
       // debounce multiple events for the same change
       if (filename) {
         try {
           const mtime = (await fs.promises.stat(filename))?.mtimeMs;
           const lastMtime = mtimes.get(filename);
           if (mtime) {
+            verbose && console.error("setting modified time for", path, mtime);
             mtimes.set(filename, mtime);
             if (mtime === lastMtime) {
+              verbose && console.error("ignoring duplicate change for", path);
               continue;
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          verbose && console.error(e);
+        }
       }
       console.log("[live] changes detected", filename);
       if (command) {
@@ -151,7 +156,8 @@ async function startWatcher(path) {
       changeBus.emit();
     }
   } catch (err) {
-    console.log("[live] closing watcher", err);
+    console.log("[live] closing watcher");
+    verbose && console.error(err);
     if (err.name === "AbortError") return;
     ac.abort();
   }
@@ -282,9 +288,11 @@ server.listen(port, () => {
   if (isLive) {
     const watchPaths = watch.split(quotedStringRE);
     for (const p of watchPaths) {
-      startWatcher(p);
+      const watchPath = path.join(process.cwd(), p);
+      verbose && console.error("watching path:", watchPath);
+      startWatcher(watchPath);
     }
-    console.log(`watching for changes in ${watchPath}`);
+    console.log(`watching for changes in ${watch}`);
     console.log(`listening for live-reload clients at /${livePath}`);
   }
 });
